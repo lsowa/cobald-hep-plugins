@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime, time as datetime_time
-from typing import Iterable, Mapping, Union
+from typing import Mapping, Union, Iterable
 
 from cobald.daemon import service
 from cobald.interfaces import Pool, PoolDecorator
@@ -15,8 +15,11 @@ Schedule = Mapping[TimeInput, float]
 
 def str_to_time(value: str) -> datetime_time:
     """Convert a HH:MM string into a :class:`datetime.time` object."""
-    hours_str, minutes_str = value.split(":")
-    hours, minutes = int(hours_str), int(minutes_str)
+    try:
+        hours_str, minutes_str = value.strip().split(":", 1)
+        hours, minutes = int(hours_str), int(minutes_str)
+    except ValueError as exc:
+        raise ValueError(f"invalid time specification {value}")
     return datetime_time(hour=hours, minute=minutes)
 
 
