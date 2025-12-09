@@ -36,7 +36,7 @@ def latest_timestamp(
 
 
 @service(flavour=asyncio)
-class Stopper(PoolDecorator):
+class Timer(PoolDecorator):
     """
     Decorator that adjusts demand based on a daily schedule.
 
@@ -53,7 +53,10 @@ class Stopper(PoolDecorator):
         interval: int = 300,
     ):
         super().__init__(target)
+        
         self.interval = interval
+
+        schedule = {str_to_time(key): value for key,value in schedule.items()}
         self.schedule = schedule
         self.latest_sched_demand = self._refresh_demand()
 
@@ -63,7 +66,7 @@ class Stopper(PoolDecorator):
 
     @demand.setter
     def demand(self, value: float) -> None:
-        # Ignore user supplied demand and enforce the scheduled value.
+        # Ignore user supplied demand and always enforce the scheduled value.
         self.target.demand = self.latest_sched_demand
 
     async def run(self) -> None:
