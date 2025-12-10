@@ -24,11 +24,13 @@ def str_to_time(value: str) -> datetime_time:
 
 
 def latest_timestamp(
-    times: Iterable[datetime_time]
+    times: Iterable[datetime_time],
+    *,
+    reference: datetime_time | None = None, # easier to test with
 ) -> datetime_time:
     """Return the latest timestamp with respect to the current time."""
     ordered_times = sorted(times) # ascending
-    current_time = datetime.now().time()
+    current_time = datetime.now().time() if reference is None else reference
     for candidate in reversed(ordered_times): # descending
         if candidate <= current_time:
             return candidate
@@ -83,4 +85,8 @@ class Timer(PoolDecorator):
         latest_sched_time = latest_timestamp(self.schedule.keys())
         self.latest_sched_demand = self.schedule[latest_sched_time]
         self.target.demand = self.latest_sched_demand
+
+        assert self.latest_sched_demand >= 0.0
+        assert self.target.demand >= 0.0
+        
         return self.latest_sched_demand
