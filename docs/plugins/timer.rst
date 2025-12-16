@@ -5,13 +5,12 @@ Timer Plugin
 .. py:module:: cobald_hep_plugins.timer
     :synopsis: Time-of-day demand controller
 
-The :class:`~cobald_hep_plugins.timer.Timer` decorator enforces a recurring,
+The :class:`~cobald_hep_plugins.timer.Timer` plugin enforces a recurring,
 time-of-day schedule for the demand of a target pool.
 
-At its core the decorator stores an ordered mapping of ``HH:MM`` timestamps (or
-``datetime.time`` instances) to demand values. Whenever the demand is updated,
+At its core the Timer plugin stores an ordered mapping of ``HH:MM`` to demand values. Whenever the demand is updated,
 ``Timer`` looks for the latest schedule entry that is not later than the current
-time and applies the demand from that entry to the wrapped pool. If the current
+time and applies the demand from that entplugin pool. If the current
 time is earlier than the first entry, the scheduled value from the previous day
 becomes active. User supplied values to :attr:`demand` are ignored so that the
 scheduled demand is always in effect.
@@ -26,7 +25,7 @@ The class accepts three arguments:
     you would normally use in a COBalD pipeline.
 
 ``schedule``
-    A mapping where the key is either ``HH:MM`` or ``datetime.time`` and the
+    A mapping where the key is either ``HH:MM`` and the
     value is a floating point demand. The schedule must at least contain one
     entry and demand values must be non-negative.
 
