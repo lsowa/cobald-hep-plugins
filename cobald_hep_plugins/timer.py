@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime, time as datetime_time
-from typing import Dict, Iterable, Mapping, Union
+from typing import Iterable, Mapping, Union
 
 from cobald.daemon import service
 from cobald.interfaces import Pool, PoolDecorator
-from cobald.utility import enforce
 
 TimeInput = Union[str, datetime_time]
 Schedule = Mapping[TimeInput, float]
@@ -24,7 +23,7 @@ def str_to_time(value: str) -> datetime_time:
 def latest_timestamp(
     times: Iterable[datetime_time]
 ) -> datetime_time:
-    """Return the latest timestamp that is not later than ``reference``."""
+    """Return the latest timestamp with respect to the current time."""
     ordered_times = sorted(times) # ascending
     current_time = datetime.now().time()
     for candidate in reversed(ordered_times): # descending
@@ -41,7 +40,7 @@ class Timer(PoolDecorator):
     Decorator that adjusts demand based on a daily schedule.
 
     :param target: pool being decorated
-    :param schedule: mapping of ``HH:MM`` times (or ``datetime.time`` instances)
+    :param schedule: mapping of ``HH:MM`` times
                      to the demand that should become active at that time
     :param interval: interval in seconds between schedule checks
     """
@@ -53,7 +52,8 @@ class Timer(PoolDecorator):
         interval: int = 300,
     ):
         super().__init__(target)
-        
+
+        assert interval > 0, "Interval must be a positive integer."
         self.interval = interval
 
         schedule = {str_to_time(key): value for key,value in schedule.items()}
