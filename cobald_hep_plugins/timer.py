@@ -2,91 +2,57 @@
 
 from __future__ import annotations
 
-import asyncio
-from datetime import datetime, time as datetime_time
-from typing import Mapping, Union, Iterable
+
+import trio
+import bisect
+
+from datetime import datetime
+from datetime import date, timedelta
+from typing import Mapping
 
 from cobald.daemon import service
-from cobald.interfaces import Pool, PoolDecorator
-
-TimeInput = Union[str, datetime_time]
-Schedule = Mapping[TimeInput, float]
+from cobald.interfaces import Pool, Controller
 
 
-def str_to_time(value: str) -> datetime_time:
-    """Convert a HH:MM string into a :class:`datetime.time` object."""
-    try:
-        hours_str, minutes_str = value.strip().split(":", 1)
-        hours, minutes = int(hours_str), int(minutes_str)
-    except ValueError as exc:
-        raise ValueError(f"invalid time specification {value}")
-    return datetime_time(hour=hours, minute=minutes)
 
+Schedule = Mapping[str, float]
 
-def latest_timestamp(
-    times: Iterable[datetime_time],
-    *,
-    reference: datetime_time | None = None, # easier to test with
-) -> datetime_time:
-    """Return the latest timestamp with respect to the current time."""
-    ordered_times = sorted(times) # ascending
-    current_time = datetime.now().time() if reference is None else reference
-    for candidate in reversed(ordered_times): # descending
-        if candidate <= current_time:
-            return candidate
-    # All configured times are in the future relative to ``current_time``.
-    # return latest timestamp
-    return ordered_times[-1]
-
-
-@service(flavour=asyncio)
-class Timer(PoolDecorator):
-    """
-    Decorator that adjusts demand based on a daily schedule.
-
-    :param target: pool being decorated
-    :param schedule: mapping of ``HH:MM`` times
-                     to the demand that should become active at that time
-    :param interval: interval in seconds between schedule checks
-    """
-
+@service(flavour=trio)
+class Timer(Controller):
     def __init__(
         self,
         target: Pool,
         schedule: Schedule,
-        interval: int = 300,
     ):
-        super().__init__(target)
-
-        assert interval > 0, "Interval must be a positive integer."
-        self.interval = interval
-
-        schedule = {str_to_time(key): value for key,value in schedule.items()}
+        super().__init__(target=target)
+        # convert schedule keys to time objects
+        schedule = {datetime.strptime(key, '%H:%M').time(): value for key,value in schedule.items()}
+        
+        # ensure schedule is sorted and valid
+        schedule = dict(sorted(schedule.items(), key=lambda item: item[0]))
+        assert len(schedule) > 0 , "Schedule must contain at least one entry."
+        assert all(demand >= 0 for demand in schedule.values()) , "All scheduled demands must be non-negative."
         self.schedule = schedule
-        self.latest_sched_demand = self._refresh_demand()
-
-    @property
-    def demand(self) -> float:
-        return self.target.demand
-
-    @demand.setter
-    def demand(self, value: float) -> None:
-        # Ignore user supplied demand and always enforce the scheduled value.
-        self.target.demand = self.latest_sched_demand
-
+    
     async def run(self) -> None:
         """Update the demand periodically according to the schedule."""
+        today = date.today()
+        keys = list(self.schedule)
+
+        # find starting index
+        idx = bisect.bisect_right(keys, datetime.now().time()) - 1
+        idx = idx % len(keys)
+
         while True:
-            self._refresh_demand()
-            await asyncio.sleep(self.interval)
+            self.target.demand = self.schedule[keys[idx]]
+            
+            # setup next index and sleep until then
+            idx = (idx + 1) % len(keys)
+            if idx == 0:
+                today += timedelta(days=1) 
 
-    def _refresh_demand(self) -> float:
-        """Look up the demand that should currently be active."""
-        latest_sched_time = latest_timestamp(self.schedule.keys())
-        self.latest_sched_demand = self.schedule[latest_sched_time]
-        self.target.demand = self.latest_sched_demand
+            time_delta = datetime.combine(today, keys[idx]) - datetime.now()
+            time_delta = max(0, time_delta.total_seconds())
+            await trio.sleep(time_delta)
 
-        assert self.latest_sched_demand >= 0.0
-        assert self.target.demand >= 0.0
-        
-        return self.latest_sched_demand
+
