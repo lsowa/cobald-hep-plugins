@@ -2,36 +2,42 @@
 
 from __future__ import annotations
 
-
-import trio
 import bisect
-
-from datetime import datetime
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Mapping
 
+import trio
 from cobald.daemon import service
 from cobald.interfaces import Pool, Controller
-
 
 
 Schedule = Mapping[str, float]
 
 @service(flavour=trio)
 class Timer(Controller):
+    """Control pool demand based on a daily time schedule."""
+
     def __init__(
         self,
         target: Pool,
         schedule: Schedule,
-    ):
+    ) -> None:
+        """Create a timer controller.
+
+        Args:
+            target: Pool whose demand is controlled by this timer.
+            schedule: Mapping of "HH:MM" to demand values.
+        """
         super().__init__(target=target)
-        # convert schedule keys to time objects
-        schedule = {datetime.strptime(key, '%H:%M').time(): value for key,value in schedule.items()}
-        
-        # ensure schedule is sorted and valid
+        schedule = {
+            datetime.strptime(key, "%H:%M").time(): value
+            for key, value in schedule.items()
+        }
         schedule = dict(sorted(schedule.items(), key=lambda item: item[0]))
-        assert len(schedule) > 0 , "Schedule must contain at least one entry."
-        assert all(demand >= 0 for demand in schedule.values()) , "All scheduled demands must be non-negative."
+        assert len(schedule) > 0, "Schedule must contain at least one entry."
+        assert all(
+            demand >= 0 for demand in schedule.values()
+        ), "All scheduled demands must be non-negative."
         self.schedule = schedule
     
     async def run(self) -> None:
@@ -39,20 +45,18 @@ class Timer(Controller):
         today = date.today()
         keys = list(self.schedule)
 
-        # find starting index
-        idx = bisect.bisect_right(keys, datetime.now().time()) - 1
-        idx = idx % len(keys)
+        start_time = datetime.now().time()
+        idx = bisect.bisect_right(keys, start_time) - 1
+        idx %= len(keys)
 
         while True:
             self.target.demand = self.schedule[keys[idx]]
             
-            # setup next index and sleep until then
             idx = (idx + 1) % len(keys)
             if idx == 0:
                 today += timedelta(days=1) 
 
-            time_delta = datetime.combine(today, keys[idx]) - datetime.now()
-            time_delta = max(0, time_delta.total_seconds())
-            await trio.sleep(time_delta)
-
+            next_time = datetime.combine(today, keys[idx])
+            sleep_seconds = max(0.0, (next_time - datetime.now()).total_seconds())
+            await trio.sleep(sleep_seconds)
 
