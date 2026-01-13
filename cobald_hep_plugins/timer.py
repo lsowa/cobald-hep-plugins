@@ -27,8 +27,8 @@ class Timer(Controller):
         """
         super().__init__(target=target)
         schedule = {
-            datetime.strptime(key, "%H:%M").time(): value
-            for key, value in schedule.items()
+            datetime.strptime(time, "%H:%M").time(): demand
+            for time, demand in schedule.items()
         }
         schedule = dict(sorted(schedule.items(), key=lambda item: item[0]))
         assert len(schedule) > 0, "Schedule must contain at least one entry."
