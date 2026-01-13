@@ -10,9 +10,6 @@ import trio
 from cobald.daemon import service
 from cobald.interfaces import Pool, Controller
 
-
-Schedule = Mapping[str, float]
-
 @service(flavour=trio)
 class Timer(Controller):
     """Control pool demand based on a daily time schedule."""
@@ -20,7 +17,7 @@ class Timer(Controller):
     def __init__(
         self,
         target: Pool,
-        schedule: Schedule,
+        schedule: Mapping[str, float],
     ) -> None:
         """Create a timer controller.
 
