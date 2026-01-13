@@ -40,20 +40,20 @@ class Timer(Controller):
     async def run(self) -> None:
         """Update the demand periodically according to the schedule."""
         today = date.today()
-        keys = list(self.schedule)
+        sched_times = list(self.schedule)
 
         start_time = datetime.now().time()
-        idx = bisect.bisect_right(keys, start_time) - 1
-        idx %= len(keys)
+        idx = bisect.bisect_right(sched_times, start_time) - 1
+        idx %= len(sched_times)
 
         while True:
-            self.target.demand = self.schedule[keys[idx]]
-            
-            idx = (idx + 1) % len(keys)
+            self.target.demand = self.schedule[sched_times[idx]]
+
+            idx = (idx + 1) % len(sched_times)
             if idx == 0:
                 today += timedelta(days=1) 
 
-            next_time = datetime.combine(today, keys[idx])
+            next_time = datetime.combine(today, sched_times[idx])
             sleep_seconds = max(0.0, (next_time - datetime.now()).total_seconds())
             await trio.sleep(sleep_seconds)
 
