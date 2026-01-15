@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
+import asyncio
 import bisect
 from datetime import date, datetime, timedelta
 from typing import Mapping
 
-import trio
 from cobald.daemon import service
 from cobald.interfaces import Pool, Controller
 
-@service(flavour=trio)
+@service(flavour=asyncio)
 class Timer(Controller):
     """Control pool demand based on a daily time schedule."""
 
@@ -54,6 +54,6 @@ class Timer(Controller):
                 today += timedelta(days=1) 
 
             next_time = datetime.combine(today, sched_times[idx])
-            sleep_seconds = max(0.0, (next_time - datetime.now()).total_seconds())
-            await trio.sleep(sleep_seconds)
+            sleep_seconds = (next_time - datetime.now()).total_seconds()
+            await asyncio.sleep(sleep_seconds)
 
