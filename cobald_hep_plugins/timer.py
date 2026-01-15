@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import bisect
 from datetime import date, datetime, timedelta
 from typing import Mapping
 
@@ -39,21 +38,10 @@ class Timer(Controller):
     
     async def run(self) -> None:
         """Update the demand periodically according to the schedule."""
-        today = date.today()
-        sched_times = list(self.schedule)
-
-        start_time = datetime.now().time()
-        idx = bisect.bisect_right(sched_times, start_time) - 1
-        idx %= len(sched_times)
-
+        today = date.today() 
         while True:
-            self.target.demand = self.schedule[sched_times[idx]]
-
-            idx = (idx + 1) % len(sched_times)
-            if idx == 0:
-                today += timedelta(days=1) 
-
-            next_time = datetime.combine(today, sched_times[idx])
-            sleep_seconds = (next_time - datetime.now()).total_seconds()
-            await asyncio.sleep(sleep_seconds)
-
+            for start_time, demand in self.schedule.items():
+                start_delta = datetime.combine(today, start_time) - datetime.now()
+                await asyncio.sleep(start_delta.total_seconds())
+                self.target.demand = demand
+            today += timedelta(days=1)
