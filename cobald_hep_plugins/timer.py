@@ -1,4 +1,4 @@
-"""Time-based demand control decorators and helpers."""
+"""Time-based demand controller and helpers."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from typing import Mapping
 
 from cobald.daemon import service
 from cobald.interfaces import Pool, Controller
+
 
 @service(flavour=asyncio)
 class Timer(Controller):
@@ -35,10 +36,10 @@ class Timer(Controller):
             demand >= 0 for demand in schedule.values()
         ), "All scheduled demands must be non-negative."
         self.schedule = schedule
-    
+
     async def run(self) -> None:
         """Update the demand periodically according to the schedule."""
-        today = date.today() 
+        today = date.today()
         while True:
             for start_time, demand in self.schedule.items():
                 start_delta = datetime.combine(today, start_time) - datetime.now()
