@@ -69,7 +69,7 @@ async def test_timer_overrides_demand(monkeypatch):
 
     monkeypatch.setattr(timer_patch.asyncio, "sleep", fast_sleep)
 
-    for test_time, expected_demand in zip(test_times, expected_demands):
+    for test_time, expected_demand in zip(test_times, expected_demands):  # noqa: B905
 
         pool = MockPool(demand=99)
 
