@@ -17,7 +17,7 @@ SCHEDULE = {
 
 
 def test_schedule_parsing_and_ordering():
-    timer = Timer(target=MockPool, schedule=SCHEDULE)
+    timer = Timer(target=MockPool(), schedule=SCHEDULE)
 
     expected = {
         datetime.time(0, 30): 0.0,
@@ -30,8 +30,8 @@ def test_schedule_parsing_and_ordering():
 
 
 def mock_time(time):
-    # mocking datatime.datetime and datetime.date
-    # for test_timer_overrides_demand()
+    """mocking datatime.datetime and datetime.date
+    for test_timer_overrides_demand()"""
 
     fixed_datetime = datetime.datetime.combine(datetime.datetime(2025, 1, 1), time)
 
@@ -49,8 +49,7 @@ def mock_time(time):
 
 
 async def fast_sleep(delay_seconds):
-    # mock asyncio.sleep() for
-    # test_timer_overrides_demand()
+    """mock asyncio.sleep() for test_timer_overrides_demand()"""
     if delay_seconds > 0:
         raise asyncio.CancelledError()
     return await unpatched_sleep(0)
@@ -86,7 +85,7 @@ async def test_timer_overrides_demand(monkeypatch):
 
 def test_schedule_rejects_empty():
     with pytest.raises(AssertionError):
-        Timer(target=MockPool, schedule={})
+        Timer(target=MockPool(), schedule={})
 
 
 def test_schedule_rejects_negative_demand():
@@ -94,10 +93,10 @@ def test_schedule_rejects_negative_demand():
         "10:00": -5.0,
     }
     with pytest.raises(AssertionError):
-        Timer(target=MockPool, schedule=schedule)
+        Timer(target=MockPool(), schedule=schedule)
 
 
 def test_schedule_rejects_invalid_time_strings():
     for invalid in ("invalid", "25:00", "12:60"):
         with pytest.raises(ValueError):
-            Timer(target=MockPool, schedule={invalid: 1.0})
+            Timer(target=MockPool(), schedule={invalid: 1.0})

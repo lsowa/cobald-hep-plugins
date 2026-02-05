@@ -46,4 +46,5 @@ An example snippet for the YAML interface in a COBalD configuration file:
         '17:30': 10
 
 With this configuration the target pool ``SomePool`` will have its demand set
-to ``20`` at 6 AM, to ``80`` at 9 AM, and to ``10`` at 5:30 PM every day.
+to ``20`` from 6 AM, to ``80`` from 9 AM, and to ``10`` from 5:30 PM until 
+6 AM on the following day and so on.
