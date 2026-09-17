@@ -14,7 +14,8 @@ is in the past it immediately updates the target pool's demand, otherwise it sle
 until the timestamp is reached and then updates the demand accordingly. After
 reaching the last timestamp in the mapping it starts over at the beginning for the
 next day. As a reference time the plugin uses the system's local time on which the
-COBalD instance is running.
+COBalD instance is running. On startup, the demand is initialised to the schedule's
+last entry.
 
 Configuration
 =============

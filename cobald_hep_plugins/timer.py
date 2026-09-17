@@ -40,6 +40,8 @@ class Timer(Controller):
     async def run(self) -> None:
         """Update the demand periodically according to the schedule."""
         today = date.today()
+        # initialize demand as it were from a previous loop
+        self.target.demand = self.schedule[max(self.schedule)]
         while True:
             for start_time, demand in self.schedule.items():
                 start_delta = datetime.combine(today, start_time) - datetime.now()

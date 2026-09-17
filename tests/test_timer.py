@@ -65,7 +65,7 @@ async def test_timer_overrides_demand(monkeypatch):
         datetime.time(12, 39),
         datetime.time(18, 4),
     ]
-    expected_demands = [99, 0.0, 10.0, 20.0, 30.0]
+    expected_demands = [30.0, 0.0, 10.0, 20.0, 30.0]
 
     monkeypatch.setattr(timer_patch.asyncio, "sleep", fast_sleep)
 
